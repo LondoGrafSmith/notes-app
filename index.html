@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои Заметки</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Heroicons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .playfair {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Светлая тема */
+        body.light-theme {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            color: #1f2937;
+        }
+
+        /* Темная тема */
+        body.dark-theme {
+            background: linear-gradient(135deg, #0f172a 0%, #1a2847 100%);
+            color: #f1f5f9;
+        }
+
+        /* Карточка заметки */
+        .note-card {
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.5s ease-out;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-theme .note-card {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .dark-theme .note-card {
+            background: rgba(30, 41, 59, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .note-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .dark-theme .note-card:hover {
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Анимация появления */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Анимация удаления */
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: scale(1) rotateZ(0deg);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.8) rotateZ(5deg);
+            }
+        }
+
+        .note-card.deleting {
+            animation: slideOut 0.4s ease-in forwards;
+        }
+
+        /* Кнопки */
+        .btn {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .light-theme .btn-icon {
+            color: #6b7280;
+        }
+
+        .light-theme .btn-icon:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #1f2937;
+        }
+
+        .dark-theme .btn-icon {
+            color: #cbd5e1;
+        }
+
+        .dark-theme .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-theme .modal-content {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Input и textarea */
+        input, textarea {
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .light-theme input,
+        .light-theme textarea {
+            background: #f3f4f6;
+            color: #1f2937;
+            border-color: #e5e7eb;
+        }
+
+        .light-theme input:focus,
+        .light-theme textarea:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .dark-theme input,
+        .dark-theme textarea {
+            background: #334155;
+            color: #f1f5f9;
+            border-color: #475569;
+        }
+
+        .dark-theme input:focus,
+        .dark-theme textarea:focus {
+            background: #1e293b;
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #ef4444;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.3s ease;
+            z-index: 2000;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast.remove {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+        }
+
+        /* Сетка */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            padding: 0;
+        }
+
+        /* Пустое состояние */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            grid-column: 1 / -1;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .light-theme .empty-state h2 {
+            color: #6b7280;
+        }
+
+        .dark-theme .empty-state h2 {
+            color: #94a3b8;
+        }
+
+        /* Поиск */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding-left: 40px !important;
+        }
+
+        /* Header */
+        header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .dark-theme header {
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .notes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 16px;
+            }
+
+            header {
+                padding: 16px;
+            }
+
+            .modal-content {
+                padding: 24px;
+            }
+
+            .toast {
+                bottom: 16px;
+                right: 16px;
+                left: 16px;
+                max-width: none;
+            }
+        }
+
+        /* Scroll плавный */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Скролл-бар */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .light-theme ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+
+        .dark-theme ::-webkit-scrollbar-track {
+            background: #1a2847;
+        }
+
+        .light-theme ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .light-theme ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        .dark-theme ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        .dark-theme ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div id="app">
+        <!-- Header -->
+        <header class="sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-4">
+                <div class="flex items-center gap-4">
+                    <h1 class="playfair text-3xl font-bold">📝 Мои Заметки</h1>
+                    <span class="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold" id="notesCount">0</span>
+                </div>
+                <button id="themeToggle" class="btn btn-icon text-2xl">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Search and Add Note -->
+            <div class="mb-8 flex flex-col gap-4 sm:flex-row justify-between items-stretch sm:items-center">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input py-3 px-4 w-full" 
+                        placeholder="Поиск по заметкам..."
+                    >
+                </div>
+                <button id="addNoteBtn" class="btn btn-primary px-6 py-3 text-white whitespace-nowrap flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span>Добавить</span>
+                </button>
+            </div>
+
+            <!-- Notes Grid -->
+            <div class="notes-grid" id="notesContainer">
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h2 class="text-xl font-semibold mb-2">У вас пока нет заметок</h2>
+                    <p class="opacity-70">Начните создавать заметки, чтобы организовать свои мысли</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Add/Edit Note -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="playfair text-2xl font-bold" id="modalTitle">Новая заметка</h2>
+                <button class="btn btn-icon text-2xl" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <textarea 
+                id="noteText" 
+                class="w-full h-48 p-4 mb-6 resize-none" 
+                placeholder="Напишите вашу заметку..."
+            ></textarea>
+            <div class="flex gap-4">
+                <button id="saveNoteBtn" class="btn btn-primary flex-1 py-3 text-white">
+                    <i class="fas fa-save mr-2"></i>Сохранить
+                </button>
+                <button class="btn py-3 px-6 border-2" style="border-color: currentColor;" onclick="closeModal()">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        const app = {
+            notes: [],
+            editingId: null,
+            theme: localStorage.getItem('theme') || 'light-theme',
+            searchQuery: ''
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadNotes();
+            renderNotes();
+            setupEventListeners();
+        });
+
+        // Event Listeners
+        function setupEventListeners() {
+            document.getElementById('addNoteBtn').addEventListener('click', openAddModal);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                app.searchQuery = e.target.value.toLowerCase();
+                renderNotes();
+            });
+            document.getElementById('noteModal').addEventListener('click', (e) => {
+                if (e.target.id === 'noteModal') closeModal();
+            });
+        }
+
+        // Theme Toggle
+        function initTheme() {
+            document.body.className = app.theme;
+            updateThemeIcon();
+        }
+
+        function toggleTheme() {
+            app.theme = app.theme === 'light-theme' ? 'dark-theme' : 'light-theme';
+            document.body.className = app.theme;
+            localStorage.setItem('theme', app.theme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.querySelector('#themeToggle i');
+            icon.className = app.theme === 'light-theme' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+
+        // Modal Management
+        function openAddModal() {
+            app.editingId = null;
+            document.getElementById('noteText').value = '';
+            document.getElementById('modalTitle').textContent = 'Новая заметка';
+            document.getElementById('noteModal').classList.add('active');
+            document.getElementById('noteText').focus();
+        }
+
+        function openEditModal(id) {
+            const note = app.notes.find(n => n.id === id);
+            if (!note) return;
+            
+            app.editingId = id;
+            document.getElementById('noteText').value = note.text;
+            document.getElementById('modalTitle').textContent = 'Редактировать заметку';
+            document.getElementById('noteModal').classList.add('active');
+            document.getElementById('noteText').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('noteModal').classList.remove('active');
+            app.editingId = null;
+        }
+
+        // Save/Update Note
+        function saveNote() {
+            const text = document.getElementById('noteText').value.trim();
+            
+            if (!text) {
+                showToast('Заметка не может быть пустой!');
+                return;
+            }
+
+            if (app.editingId) {
+                // Update existing note
+                const note = app.notes.find(n => n.id === app.editingId);
+                if (note) {
+                    note.text = text;
+                    note.updatedAt = new Date();
+                }
+            } else {
+                // Create new note
+                const newNote = {
+                    id: Date.now(),
+                    text: text,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+                app.notes.unshift(newNote);
+            }
+
+            saveNotes();
+            renderNotes();
+            closeModal();
+            showToast(app.editingId ? 'Заметка обновлена' : 'Заметка добавлена', 2000);
+        }
+
+        // Delete Note
+        function deleteNote(id) {
+            if (confirm('Вы уверены, что хотите удалить эту заметку?')) {
+                const noteElement = document.querySelector(`[data-note-id="${id}"]`);
+                if (noteElement) {
+                    noteElement.classList.add('deleting');
+                    setTimeout(() => {
+                        app.notes = app.notes.filter(n => n.id !== id);
+                        saveNotes();
+                        renderNotes();
+                        showToast('Заметка удалена', 1500);
+                    }, 400);
+                }
+            }
+        }
+
+        // Render Notes
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            
+            // Filter notes by search
+            const filteredNotes = app.notes.filter(note => {
+                const title = note.text.substring(0, 30).toLowerCase();
+                const fullText = note.text.toLowerCase();
+                return title.includes(app.searchQuery) || fullText.includes(app.searchQuery);
+            });
+
+            // Update counter
+            document.getElementById('notesCount').textContent = app.notes.length;
+
+            if (filteredNotes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">${app.searchQuery ? '🔍' : '📭'}</div>
+                        <h2 class="text-xl font-semibold mb-2">
+                            ${app.searchQuery ? 'Заметки не найдены' : 'У вас пока нет заметок'}
+                        </h2>
+                        <p class="opacity-70">
+                            ${app.searchQuery 
+                                ? 'Попробуйте изменить поисковый запрос' 
+                                : 'Начните создавать заметки, чтобы организовать свои мысли'}
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredNotes.map(note => {
+                const title = note.text.substring(0, 30) + (note.text.length > 30 ? '...' : '');
+                const date = new Date(note.createdAt);
+                const formattedDate = date.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).replace(',', ',');
+
+                return `
+                    <div class="note-card p-6 cursor-pointer group" data-note-id="${note.id}">
+                        <div class="flex justify-between items-start mb-3 gap-2">
+                            <h3 class="font-semibold text-lg leading-tight flex-1 break-words">${escapeHtml(title)}</h3>
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                    class="btn btn-icon text-blue-500 hover:text-blue-600"
+                                    onclick="openEditModal(${note.id})"
+                                    title="Редактировать"
+                                >
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                    class="btn btn-icon text-red-500 hover:text-red-600"
+                                    onclick="deleteNote(${note.id})"
+                                    title="Удалить"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="opacity-70 text-sm mb-4 line-clamp-3 break-words">${escapeHtml(note.text)}</p>
+                        <p class="text-xs opacity-50 font-medium">${formattedDate}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Local Storage
+        function saveNotes() {
+            localStorage.setItem('notes', JSON.stringify(app.notes));
+        }
+
+        function loadNotes() {
+            const stored = localStorage.getItem('notes');
+            if (stored) {
+                try {
+                    app.notes = JSON.parse(stored).map(note => ({
+                        ...note,
+                        createdAt: new Date(note.createdAt),
+                        updatedAt: new Date(note.updatedAt)
+                    }));
+                } catch (e) {
+                    console.error('Error loading notes:', e);
+                    app.notes = [];
+                }
+            }
+        }
+
+        // Toast Notification
+        function showToast(message, duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('remove');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
